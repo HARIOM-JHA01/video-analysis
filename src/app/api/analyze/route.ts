@@ -1,14 +1,14 @@
-import fs from "fs";
-import os from "os";
-import path from "path";
-import OpenAI from "openai";
-import ffmpeg from "fluent-ffmpeg";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import {
-  GoogleGenAI,
   createPartFromUri,
   createUserContent,
+  GoogleGenAI,
 } from "@google/genai";
+import ffmpeg from "fluent-ffmpeg";
 import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
       while (uploadedFile.state === "PROCESSING") {
         if (Date.now() - startTime > maxWaitMs) {
           throw new Error(
-            "Timeout waiting for video file to finish processing"
+            "Timeout waiting for video file to finish processing",
           );
         }
         // eslint-disable-next-line no-console
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
 
       if (uploadedFile.state !== "ACTIVE") {
         throw new Error(
-          `File processing failed with state: ${uploadedFile.state}`
+          `File processing failed with state: ${uploadedFile.state}`,
         );
       }
       // eslint-disable-next-line no-console
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
       // Use createPartFromUri and createUserContent to build multimodal request
       const videoPart = createPartFromUri(
         uploadedFile.uri ?? "",
-        uploadedFile.mimeType ?? "video/webm"
+        uploadedFile.mimeType ?? "video/webm",
       );
       const resp = await gemini.models.generateContent({
         model: model || "gemini-2.5-flash",

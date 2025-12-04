@@ -16,10 +16,10 @@ export default function Home() {
   const [models, setModels] = useState<ModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [selectedProvider, setSelectedProvider] = useState<"openai" | "gemini">(
-    "gemini"
+    "gemini",
   );
   const [prompt, setPrompt] = useState<string>(
-    "Please analyze this video and provide: summary, main topics, sentiment, and key takeaways with timestamps if available."
+    "Please analyze this video and provide: summary, main topics, sentiment, and key takeaways with timestamps if available.",
   );
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
