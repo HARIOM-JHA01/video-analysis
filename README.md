@@ -30,3 +30,24 @@ bun dev
 - **OpenAI** extracts audio from the video and uses the `gpt-4o-audio-preview` model.
 - The API uses server-side keys. Do not expose your API keys in the browser.
 - Gemini and OpenAI models are listed from each provider's API automatically.
+
+### Deploying to Vercel (ffmpeg note)
+
+When deploying to Vercel (or other serverless platforms) the system `ffmpeg` binary is often not available. To ensure audio extraction works in the serverless runtime, add a bundled ffmpeg binary to your project using `ffmpeg-static` and redeploy.
+
+```bash
+# Install bundled ffmpeg binary
+bun add ffmpeg-static
+
+# Or with npm
+npm install ffmpeg-static
+
+# Then redeploy to Vercel
+git add package.json bun.lockb package.json.lock && git commit -m "Add ffmpeg-static" && git push
+vercel --prod
+```
+
+The code already configures `fluent-ffmpeg` to use the static binary at runtime. If you prefer not to include a binary, alternatives:
+
+- Install `ffmpeg` on the host (not possible on many serverless hosts).
+- Use a WebAssembly-based approach (`@ffmpeg/ffmpeg`) to decode audio in Node.js or the edge.
