@@ -1,0 +1,18 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: video-analysis:latest
+    container_name: video-analysis
+    ports:
+      - "30000:30000"
+    environment:
+      - NODE_ENV=development
+      - PORT=30000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./:/app:delegated
+    command: npm run dev
+    # Use "docker compose up --build" to build/bind with local filesystem for dev

@@ -31,23 +31,16 @@ bun dev
 - The API uses server-side keys. Do not expose your API keys in the browser.
 - Gemini and OpenAI models are listed from each provider's API automatically.
 
-### Deploying to Vercel (ffmpeg note)
+### Run with Docker / Docker Compose
 
-When deploying to Vercel (or other serverless platforms) the system `ffmpeg` binary is often not available. To ensure audio extraction works in the serverless runtime, add a bundled ffmpeg binary to your project using `ffmpeg-static` and redeploy.
+There is a `Dockerfile` and `docker-compose.yml` included that contain `ffmpeg` so audio extraction works.
 
 ```bash
-# Install bundled ffmpeg binary
-bun add ffmpeg-static
+# Development (mounts your working directory):
+docker compose up --build
 
-# Or with npm
-npm install ffmpeg-static
-
-# Then redeploy to Vercel
-git add package.json bun.lockb package.json.lock && git commit -m "Add ffmpeg-static" && git push
-vercel --prod
+# Production (build once and run):
+docker compose -f docker-compose.yml up -d --build
 ```
 
-The code already configures `fluent-ffmpeg` to use the static binary at runtime. If you prefer not to include a binary, alternatives:
-
-- Install `ffmpeg` on the host (not possible on many serverless hosts).
-- Use a WebAssembly-based approach (`@ffmpeg/ffmpeg`) to decode audio in Node.js or the edge.
+Refer to `README_DOCKER.md` for more details.
