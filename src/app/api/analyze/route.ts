@@ -7,7 +7,6 @@ import {
   GoogleGenAI,
 } from "@google/genai";
 import ffmpeg from "fluent-ffmpeg";
-import ffmpegStatic from "ffmpeg-static";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -20,12 +19,8 @@ async function saveFormFile(file: Blob, dest: string) {
   return dest;
 }
 
-// Use the ffmpeg-static binary if the environment doesn't have ffmpeg installed
-if (ffmpegStatic) {
-  // eslint-disable-next-line no-console
-  console.log("Using ffmpeg-static binary:", ffmpegStatic);
-  ffmpeg.setFfmpegPath(ffmpegStatic as string);
-}
+// Use system ffmpeg (installed via apt-get in Docker)
+ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
 
 // Extract audio from video using fluent-ffmpeg
 function extractAudio(videoPath: string, audioPath: string): Promise<void> {

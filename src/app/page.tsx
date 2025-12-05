@@ -16,10 +16,10 @@ export default function Home() {
   const [models, setModels] = useState<ModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [selectedProvider, setSelectedProvider] = useState<"openai" | "gemini">(
-    "gemini",
+    "gemini"
   );
   const [prompt, setPrompt] = useState<string>(
-    "Please analyze this video and provide: summary, main topics, sentiment, and key takeaways with timestamps if available.",
+    "Please analyze this video and provide: summary, main topics, sentiment, and key takeaways with timestamps if available."
   );
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
@@ -67,6 +67,11 @@ export default function Home() {
       audio: true,
     });
     if (videoRef.current) {
+      // Clean up any previous src to avoid audio echo
+      videoRef.current.src = "";
+      videoRef.current.removeAttribute("src");
+      videoRef.current.controls = false;
+      videoRef.current.muted = true;
       videoRef.current.srcObject = stream;
       videoRef.current.play().catch(() => {});
     }
@@ -127,7 +132,10 @@ export default function Home() {
             <video
               ref={videoRef}
               className="h-64 w-full bg-black"
-              muted
+              style={{
+                transform: recording && !videoBlob ? "scaleX(-1)" : "none",
+              }}
+              muted={recording || !videoBlob}
             ></video>
             <div className="mt-4 flex gap-2">
               {!recording ? (
@@ -152,8 +160,18 @@ export default function Home() {
                 className="rounded bg-slate-700 px-4 py-2 text-white"
                 onClick={() => {
                   if (videoRef.current && videoBlob) {
+                    // Stop any active stream before preview
+                    const stream = videoRef.current
+                      .srcObject as MediaStream | null;
+                    if (stream) {
+                      for (const track of stream.getTracks()) {
+                        track.stop();
+                      }
+                      videoRef.current.srcObject = null;
+                    }
                     videoRef.current.src = URL.createObjectURL(videoBlob);
                     videoRef.current.controls = true;
+                    videoRef.current.muted = false;
                     videoRef.current.play().catch(() => {});
                   }
                 }}
