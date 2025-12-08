@@ -9,6 +9,7 @@ import {
 import ffmpeg from "fluent-ffmpeg";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import type { VisualCoachingReport } from "@/types/analysis";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -174,10 +175,127 @@ export async function POST(request: Request) {
       await fs.promises.rmdir(tmpDir);
     } catch {}
 
-    return NextResponse.json({ analysis });
+    // Map the freeform analysis to structured coaching report
+    const coachingReport = await generateCoachingReport(analysis, provider);
+
+    return NextResponse.json({
+      coachingReport,
+      analysis, // keep for backward compatibility
+    });
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error(err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}
+
+async function generateCoachingReport(
+  rawAnalysis: string,
+  provider: string
+): Promise<VisualCoachingReport> {
+  try {
+    // Use the provider's API to map the freeform analysis into structured JSON
+    const mappingPrompt = `You are a coaching report generator. Given the following video/audio analysis, generate a structured coaching report in JSON format.
+
+Analysis:
+${rawAnalysis}
+
+Generate a JSON object with these exact fields:
+- toneWarmth: number (0-10, representing warmth of speaker's tone)
+- score: number (0-100, overall coaching score)
+- badge: string (one of: "🚫 Needs Support", "🌼 Growing", "🌸 Friendly", "🌺 Caring Expert")
+- trainingMeaning: string (one clear sentence describing what to improve)
+- voiceRecipe: array of 3 objects, each with "ingredient" (string) and "tip" (string) - specific actionable advice
+- audioStyles: object with "tryIt" (array of 2-3 short style recommendations) and "dontTry" (array of 2-3 styles to avoid)
+- practiceExercise: string (a 15-second practice drill, 2-3 sentences)
+- empathyGoal: string (one sentence, brand-themed goal like "Sound like you are delivering flowers with your voice")
+
+Return ONLY valid JSON, no markdown, no explanation.`;
+
+    let mappedJson = "";
+
+    if (provider === "openai") {
+      const res = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a JSON generator. Return only valid JSON.",
+          },
+          { role: "user", content: mappingPrompt },
+        ],
+        response_format: { type: "json_object" },
+      });
+      mappedJson = res.choices?.[0]?.message?.content ?? "{}";
+    } else {
+      // Use Gemini for mapping
+      const resp = await gemini.models.generateContent({
+        model: "gemini-2.0-flash-exp",
+        contents: [{ role: "user", parts: [{ text: mappingPrompt }] }],
+        config: {
+          responseMimeType: "application/json",
+        },
+      });
+      const respUnknown = resp as unknown as {
+        candidates?: { content?: { parts?: { text?: string }[] } }[];
+      };
+      const parts = (respUnknown.candidates?.[0]?.content?.parts ?? []) as {
+        text?: string;
+      }[];
+      mappedJson = parts.map((p) => p.text ?? "").join("\n") || "{}";
+    }
+
+    const parsed = JSON.parse(mappedJson) as VisualCoachingReport;
+
+    // Add rawAnalysis for reference
+    parsed.rawAnalysis = rawAnalysis;
+
+    // Validate and provide defaults
+    return {
+      toneWarmth: parsed.toneWarmth ?? 5,
+      score: parsed.score ?? 50,
+      badge: parsed.badge ?? "🌼 Growing",
+      trainingMeaning:
+        parsed.trainingMeaning ?? "Continue developing your coaching voice",
+      voiceRecipe: parsed.voiceRecipe ?? [
+        { ingredient: "Pitch", tip: "Maintain steady pitch" },
+        { ingredient: "Pauses", tip: "Add natural pauses" },
+        { ingredient: "Tone", tip: "Speak warmly" },
+      ],
+      audioStyles: parsed.audioStyles ?? {
+        tryIt: ["Warm conversational"],
+        dontTry: ["Monotone"],
+      },
+      practiceExercise:
+        parsed.practiceExercise ??
+        "Practice speaking with a smile. Repeat your greeting 3 times.",
+      empathyGoal:
+        parsed.empathyGoal ??
+        "Sound caring and supportive in every interaction.",
+      rawAnalysis: parsed.rawAnalysis,
+    };
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("Failed to generate coaching report:", error);
+    // Return a default report if mapping fails
+    return {
+      toneWarmth: 5,
+      score: 50,
+      badge: "🌼 Growing",
+      trainingMeaning: "Analysis completed. Review the full analysis below.",
+      voiceRecipe: [
+        { ingredient: "Clarity", tip: "Speak clearly and at a moderate pace" },
+        { ingredient: "Warmth", tip: "Add warmth to your tone" },
+        { ingredient: "Engagement", tip: "Engage with energy and enthusiasm" },
+      ],
+      audioStyles: {
+        tryIt: ["Conversational and friendly", "Clear enunciation"],
+        dontTry: ["Monotone delivery", "Speaking too fast"],
+      },
+      practiceExercise:
+        "Take a breath, smile, and practice your greeting with warmth. Repeat 3 times.",
+      empathyGoal: "Make every interaction feel personal and caring.",
+      rawAnalysis,
+    };
   }
 }

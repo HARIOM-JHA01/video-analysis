@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import VisualCoachingReport from "./components/VisualCoachingReport";
+import type { AnalysisResponse } from "@/types/analysis";
 
 type ModelOption = {
   provider: "openai" | "gemini";
@@ -18,14 +20,26 @@ export default function Home() {
   const [selectedProvider, setSelectedProvider] = useState<"openai" | "gemini">(
     "gemini"
   );
-  const [prompt, setPrompt] = useState<string>(
-    "Please analyze this video and provide: summary, main topics, sentiment, and key takeaways with timestamps if available."
-  );
+  const DEFAULT_PROMPT =
+    "Please analyze this video and provide: summary, main topics, sentiment, and key takeaways with timestamps if available.";
+
+  const VISUAL_COACHING_PROMPT = `Please analyze the video/audio and return a structured Visual Coaching Report in JSON ONLY (no markdown, no explanation) with the exact fields:
+  {
+    "toneWarmth": number (0-10),
+    "score": number (0-100),
+    "badge": string (one of: "🚫 Needs Support","🌼 Growing","🌸 Friendly","🌺 Caring Expert"),
+    "trainingMeaning": string,
+    "voiceRecipe": [ {"ingredient": string, "tip": string}, ... 3 items ],
+    "audioStyles": { "tryIt": [string], "dontTry": [string] },
+    "practiceExercise": string,
+    "empathyGoal": string
+  }
+  Please ensure voiceRecipe contains exactly 3 actionable items.
+`;
+
+  const [prompt, setPrompt] = useState<string>(DEFAULT_PROMPT);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{
-    analysis?: string;
-    error?: string;
-  } | null>(null);
+  const [result, setResult] = useState<AnalysisResponse | null>(null);
 
   useEffect(() => {
     // fetch models once
@@ -194,6 +208,22 @@ export default function Home() {
             <label htmlFor="prompt" className="block text-sm font-medium">
               Prompt
             </label>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
+                onClick={() => setPrompt(VISUAL_COACHING_PROMPT)}
+              >
+                Use Visual Coaching Prompt
+              </button>
+              <button
+                type="button"
+                className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
+                onClick={() => setPrompt(DEFAULT_PROMPT)}
+              >
+                Use Summary Prompt
+              </button>
+            </div>
             <textarea
               id="prompt"
               className="mt-1 h-28 w-full rounded border p-2"
@@ -259,14 +289,16 @@ export default function Home() {
             {result ? (
               result.error ? (
                 <p className="text-sm text-red-500">{result.error}</p>
-              ) : (
+              ) : result.coachingReport ? (
+                <VisualCoachingReport report={result.coachingReport} />
+              ) : result.analysis ? (
                 <div>
                   <h3 className="font-medium">Analysis</h3>
                   <pre className="whitespace-pre-wrap rounded bg-zinc-50 p-3 text-sm">
                     {result.analysis}
                   </pre>
                 </div>
-              )
+              ) : null
             ) : (
               <p className="text-sm text-zinc-500">
                 No result yet. Record a video and click submit to analyze.
