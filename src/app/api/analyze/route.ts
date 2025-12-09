@@ -23,6 +23,20 @@ async function saveFormFile(file: Blob, dest: string) {
 // Use system ffmpeg (installed via apt-get in Docker)
 ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
 
+// Get media duration using ffprobe
+function getMediaDuration(filePath: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(filePath, (err, metadata) => {
+      if (err) {
+        reject(err);
+      } else {
+        const duration = metadata.format?.duration || 0;
+        resolve(duration);
+      }
+    });
+  });
+}
+
 // Extract audio from video using fluent-ffmpeg
 function extractAudio(videoPath: string, audioPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -55,6 +69,15 @@ export async function POST(request: Request) {
     const videoPath = path.join(tmpDir, "recording.webm");
     await saveFormFile(file, videoPath);
 
+    // Get media duration
+    const duration = await getMediaDuration(videoPath);
+    const durationFormatted = `${Math.floor(duration / 60)}:${(duration % 60)
+      .toFixed(0)
+      .padStart(2, "0")}`;
+    console.log(
+      `Media duration: ${durationFormatted} (${duration.toFixed(1)}s)`
+    );
+
     let analysis = "";
 
     if (provider === "openai") {
@@ -83,7 +106,12 @@ export async function POST(request: Request) {
           {
             role: "user",
             content: [
-              { type: "text", text: prompt },
+              {
+                type: "text",
+                text: `${prompt}\n\nNote: This media file is ${durationFormatted} long (${duration.toFixed(
+                  1
+                )} seconds). Please provide timestamps within this duration range.`,
+              },
               {
                 type: "input_audio",
                 input_audio: { data: base64Audio, format: "wav" },
@@ -142,7 +170,12 @@ export async function POST(request: Request) {
       );
       const resp = await gemini.models.generateContent({
         model: model || "gemini-2.5-flash",
-        contents: createUserContent([videoPart, prompt]),
+        contents: createUserContent([
+          videoPart,
+          `${prompt}\n\nNote: This media file is ${durationFormatted} long (${duration.toFixed(
+            1
+          )} seconds). Please provide timestamps within this duration range.`,
+        ]),
       });
 
       // Extract text from response
@@ -178,7 +211,11 @@ export async function POST(request: Request) {
     } catch {}
 
     // Map the freeform analysis to structured coaching report
-    const coachingReport = await generateCoachingReport(analysis, provider);
+    const coachingReport = await generateCoachingReport(
+      analysis,
+      provider,
+      duration
+    );
 
     return NextResponse.json({
       coachingReport,
@@ -193,14 +230,22 @@ export async function POST(request: Request) {
 
 async function generateCoachingReport(
   rawAnalysis: string,
-  provider: string
+  provider: string,
+  duration: number
 ): Promise<VisualCoachingReport> {
   try {
     // Use the provider's API to map the freeform analysis into structured JSON
+    const durationFormatted = `${Math.floor(duration / 60)}:${(duration % 60)
+      .toFixed(0)
+      .padStart(2, "0")}`;
     const mappingPrompt = `You are a coaching report generator. Given the following video/audio analysis, generate a structured coaching report in JSON format.
 
 Analysis:
 ${rawAnalysis}
+
+Note: The original media file is ${durationFormatted} long (${duration.toFixed(
+      1
+    )} seconds). All timestamps in improvementOpportunities must be within this duration range.
 
 Generate a JSON object with these exact fields:
 - toneWarmth: number (0-10, representing warmth of speaker's tone)
