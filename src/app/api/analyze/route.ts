@@ -108,7 +108,7 @@ export async function POST(request: Request) {
             content: [
               {
                 type: "text",
-                text: `${prompt}\n\nNote: This media file is ${durationFormatted} long (${duration.toFixed(
+                text: `${prompt}\n\nNote: This is a ${mediaType} recording that is ${durationFormatted} long (${duration.toFixed(
                   1
                 )} seconds). Please provide timestamps within this duration range.`,
               },
@@ -172,7 +172,7 @@ export async function POST(request: Request) {
         model: model || "gemini-2.5-flash",
         contents: createUserContent([
           videoPart,
-          `${prompt}\n\nNote: This media file is ${durationFormatted} long (${duration.toFixed(
+          `${prompt}\n\nNote: This is a ${mediaType} recording that is ${durationFormatted} long (${duration.toFixed(
             1
           )} seconds). Please provide timestamps within this duration range.`,
         ]),
@@ -214,7 +214,8 @@ export async function POST(request: Request) {
     const coachingReport = await generateCoachingReport(
       analysis,
       provider,
-      duration
+      duration,
+      mediaType
     );
 
     return NextResponse.json({
@@ -231,7 +232,8 @@ export async function POST(request: Request) {
 async function generateCoachingReport(
   rawAnalysis: string,
   provider: string,
-  duration: number
+  duration: number,
+  mediaType: string
 ): Promise<VisualCoachingReport> {
   try {
     // Use the provider's API to map the freeform analysis into structured JSON
@@ -243,7 +245,7 @@ async function generateCoachingReport(
 Analysis:
 ${rawAnalysis}
 
-Note: The original media file is ${durationFormatted} long (${duration.toFixed(
+Note: The original media file is a ${mediaType} recording that is ${durationFormatted} long (${duration.toFixed(
       1
     )} seconds). All timestamps in improvementOpportunities must be within this duration range.
 
