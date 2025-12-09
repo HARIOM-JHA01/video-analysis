@@ -45,6 +45,7 @@ export async function POST(request: Request) {
     const provider = (fd.get("provider") as string) || "gemini";
     const model = (fd.get("model") as string) || "";
     const prompt = (fd.get("prompt") as string) || "";
+    const mediaType = (fd.get("mediaType") as string) || "video";
 
     if (!file) {
       return NextResponse.json({ error: "file is required" }, { status: 400 });
@@ -98,13 +99,14 @@ export async function POST(request: Request) {
     } else {
       // Gemini: Upload the file and use it with generateContent for true video analysis
       // eslint-disable-next-line no-console
-      console.log("Uploading video to Gemini...");
+      console.log("Uploading file to Gemini...");
+      const mimeType = mediaType === "audio" ? "audio/webm" : "video/webm";
       let uploadedFile = await gemini.files.upload({
         file: videoPath,
-        config: { mimeType: "video/webm" },
+        config: { mimeType },
       });
       // eslint-disable-next-line no-console
-      console.log("Video uploaded:", uploadedFile);
+      console.log("File uploaded:", uploadedFile);
 
       // Wait for the file to become ACTIVE (it starts in PROCESSING state)
       const maxWaitMs = 120_000; // 2 minutes max
@@ -136,7 +138,7 @@ export async function POST(request: Request) {
       // Use createPartFromUri and createUserContent to build multimodal request
       const videoPart = createPartFromUri(
         uploadedFile.uri ?? "",
-        uploadedFile.mimeType ?? "video/webm"
+        uploadedFile.mimeType ?? mimeType
       );
       const resp = await gemini.models.generateContent({
         model: model || "gemini-2.5-flash",
