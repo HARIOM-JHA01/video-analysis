@@ -8,6 +8,12 @@ export interface AudioStyles {
   dontTry: string[];
 }
 
+export interface ImprovementOpportunity {
+  timestamp: string;
+  issue: string;
+  suggestion: string;
+}
+
 export interface VisualCoachingReport {
   toneWarmth: number; // 0-10
   score: number; // 0-100
@@ -17,6 +23,7 @@ export interface VisualCoachingReport {
   audioStyles: AudioStyles;
   practiceExercise: string;
   empathyGoal: string;
+  improvementOpportunities: ImprovementOpportunity[];
   rawAnalysis?: string; // original freeform text
 }
 

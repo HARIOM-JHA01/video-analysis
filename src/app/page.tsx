@@ -33,15 +33,15 @@ export default function Home() {
     "voiceRecipe": [ {"ingredient": string, "tip": string}, ... 3 items ],
     "audioStyles": { "tryIt": [string], "dontTry": [string] },
     "practiceExercise": string,
-    "empathyGoal": string
+    "empathyGoal": string,
+    "improvementOpportunities": [ {"timestamp": string, "issue": string, "suggestion": string}, ... 3 items ]
   }
-  Please ensure voiceRecipe contains exactly 3 actionable items.
-`;
+  Please ensure voiceRecipe contains exactly 3 actionable items and improvementOpportunities contains exactly 3 specific improvement opportunities with timestamps.`;
 
   const [prompt, setPrompt] = useState<string>(DEFAULT_PROMPT);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResponse | null>(null);
-  const [isDevMode, setIsDevMode] = useState<boolean>(true);
+  const [isDevMode, setIsDevMode] = useState<boolean>(false);
 
   useEffect(() => {
     // fetch models once
@@ -353,10 +353,10 @@ export default function Home() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    Analyzing Your Voice...
+                    Analyzing...
                   </span>
                 ) : (
-                  "🚀 Analyze My Voice"
+                  "Analyze"
                 )}
               </button>
               {isDevMode && videoBlob && (

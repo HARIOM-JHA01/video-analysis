@@ -152,6 +152,42 @@ export default function VisualCoachingReport({ report }: Props) {
         <p className="text-base italic text-gray-700">{report.empathyGoal}</p>
       </div>
 
+      {/* Improvement Opportunities */}
+      <div className="rounded-lg border bg-linear-to-br from-amber-50 to-orange-50 p-5">
+        <h3 className="mb-3 text-lg font-semibold text-gray-800">
+          🎯 Top 3 Improvement Opportunities
+        </h3>
+        <div className="space-y-4">
+          {report.improvementOpportunities?.map((opportunity, idx) => (
+            <div
+              key={`improvement-${opportunity.timestamp}-${opportunity.issue}`}
+              className="rounded-lg border bg-white p-4 shadow-sm"
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-400 text-lg font-bold text-white">
+                  {idx + 1}
+                </div>
+                <div className="flex-1">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+                      ⏰ {opportunity.timestamp}
+                    </span>
+                  </div>
+                  <div className="mb-2">
+                    <div className="font-semibold text-red-700">
+                      ⚠️ {opportunity.issue}
+                    </div>
+                  </div>
+                  <div className="text-sm text-green-700">
+                    💡 <strong>Suggestion:</strong> {opportunity.suggestion}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Raw Analysis (collapsible) */}
       {report.rawAnalysis && (
         <details className="rounded-lg border bg-gray-50 p-4">

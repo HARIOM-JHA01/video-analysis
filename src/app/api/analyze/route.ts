@@ -211,6 +211,7 @@ Generate a JSON object with these exact fields:
 - audioStyles: object with "tryIt" (array of 2-3 short style recommendations) and "dontTry" (array of 2-3 styles to avoid)
 - practiceExercise: string (a 15-second practice drill, 2-3 sentences)
 - empathyGoal: string (one sentence, brand-themed goal like "Sound like you are delivering flowers with your voice")
+- improvementOpportunities: array of 3 objects, each with "timestamp" (string like "0:15", "1:30"), "issue" (string describing the problem), and "suggestion" (string with improvement advice)
 
 Return ONLY valid JSON, no markdown, no explanation.`;
 
@@ -251,6 +252,7 @@ Return ONLY valid JSON, no markdown, no explanation.`;
 
     // Add rawAnalysis for reference
     parsed.rawAnalysis = rawAnalysis;
+    console.log("Parsed coaching report:", parsed);
 
     // Validate and provide defaults
     return {
@@ -274,6 +276,24 @@ Return ONLY valid JSON, no markdown, no explanation.`;
       empathyGoal:
         parsed.empathyGoal ??
         "Sound caring and supportive in every interaction.",
+      improvementOpportunities: parsed.improvementOpportunities ?? [
+        {
+          timestamp: "0:15",
+          issue: "Speaking pace too fast",
+          suggestion: "Slow down and add pauses between sentences",
+        },
+        {
+          timestamp: "0:45",
+          issue: "Monotone delivery",
+          suggestion: "Add more vocal variety and enthusiasm",
+        },
+        {
+          timestamp: "1:20",
+          issue: "Lack of warmth",
+          suggestion:
+            "Smile while speaking and focus on connecting with the listener",
+        },
+      ],
       rawAnalysis: parsed.rawAnalysis,
     };
   } catch (error) {
@@ -297,6 +317,24 @@ Return ONLY valid JSON, no markdown, no explanation.`;
       practiceExercise:
         "Take a breath, smile, and practice your greeting with warmth. Repeat 3 times.",
       empathyGoal: "Make every interaction feel personal and caring.",
+      improvementOpportunities: [
+        {
+          timestamp: "0:15",
+          issue: "Speaking pace too fast",
+          suggestion: "Slow down and add pauses between sentences",
+        },
+        {
+          timestamp: "0:45",
+          issue: "Monotone delivery",
+          suggestion: "Add more vocal variety and enthusiasm",
+        },
+        {
+          timestamp: "1:20",
+          issue: "Lack of warmth",
+          suggestion:
+            "Smile while speaking and focus on connecting with the listener",
+        },
+      ],
       rawAnalysis,
     };
   }
