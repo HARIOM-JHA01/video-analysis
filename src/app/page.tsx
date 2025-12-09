@@ -18,7 +18,7 @@ export default function Home() {
   const [models, setModels] = useState<ModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [selectedProvider, setSelectedProvider] = useState<"openai" | "gemini">(
-    "gemini"
+    "openai"
   );
   const [mode, setMode] = useState<"video" | "audio">("video");
   const DEFAULT_PROMPT =
@@ -60,7 +60,7 @@ export default function Home() {
 
   useEffect(() => {
     if (models.length && !selectedModel) {
-      const first = models.find((m) => m.provider === "gemini");
+      const first = models.find((m) => m.provider === "openai");
       if (first) {
         setSelectedModel(first.id);
         setSelectedProvider(first.provider);
